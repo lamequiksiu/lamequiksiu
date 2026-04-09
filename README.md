@@ -1,5 +1,4 @@
 ## Hi there 👋
-you can download the model from https://drive.google.com/file/d/16Oboap0I1E9wbuRsSoD7DtKaNdzhkHld/view?usp=sharing
 <!--
 **lamequiksiu/lamequiksiu** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
 
