@@ -98,7 +98,7 @@ st.markdown("""
 
 # ---------------- HEADER ----------------
 st.markdown('<div class="title">Lamequi AI</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Next-gen Veterinary X-ray Diagnosis</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">AI-powered Veterinary Diagnosis Platform</div>', unsafe_allow_html=True)
 
 # ---------------- MODEL DOWNLOAD ----------------
 model_path = "model.pth"
@@ -142,35 +142,45 @@ if file:
     with col2:
         if st.button("🚀 Analyze Now"):
             
-            progress = st.progress(0)
-            for i in range(100):
-                time.sleep(0.01)
-                progress.progress(i + 1)
+            with st.spinner("🧠 AI is analyzing the X-ray..."):
+                time.sleep(1)
 
-            img_t = transform(img).unsqueeze(0)
+                progress = st.progress(0)
+                for i in range(100):
+                    time.sleep(0.005)
+                    progress.progress(i + 1)
 
-            with torch.no_grad():
-                output = model(img_t)
-                probs = torch.nn.functional.softmax(output, dim=1)
-                confidence, pred = torch.max(probs, 1)
+                img_t = transform(img).unsqueeze(0)
 
-            classes = ["🦴 Fracture", "✅ Normal"]
-            result = classes[pred.item()]
-            conf = confidence.item() * 100
+                with torch.no_grad():
+                    output = model(img_t)
+                    probs = torch.nn.functional.softmax(output, dim=1)
+                    confidence, pred = torch.max(probs, 1)
 
-            color = "#ff4b4b" if pred.item() == 0 else "#00c853"
+                classes = ["🦴 Fracture", "✅ Normal"]
+                result = classes[pred.item()]
+                conf = confidence.item() * 100
 
-            st.markdown(f"""
-            <div class="result-card" style="background:{color}">
-                {result}<br><br>
-                Confidence: {conf:.2f}%
-            </div>
-            """, unsafe_allow_html=True)
+                color = "#ff4b4b" if pred.item() == 0 else "#00c853"
 
-            st.write("")
-            st.progress(conf / 100)
+                st.markdown(f"""
+                <div class="result-card" style="background:{color}">
+                    {result}<br><br>
+                    Confidence: {conf:.2f}%
+                </div>
+                """, unsafe_allow_html=True)
 
-            st.metric("Confidence Score", f"{conf:.2f}%")
+                st.write("")
+                st.progress(conf / 100)
+                st.metric("Confidence Score", f"{conf:.2f}%")
+
+                # 🔥 Diagnosis Details
+                st.markdown("### 🔍 Diagnosis Details")
+
+                if pred.item() == 0:
+                    st.error("Possible fracture detected. Immediate veterinary consultation recommended.")
+                else:
+                    st.success("No fracture detected. The bone structure appears normal.")
 
 else:
     st.info("Upload an image to start AI analysis")
@@ -180,7 +190,7 @@ st.markdown('</div>', unsafe_allow_html=True)
 # ---------------- FOOTER ----------------
 st.markdown("""
 <hr style="border:0.5px solid #444;">
-<p style='text-align:center; color:gray;'>
-🚀 Powered by Lamequi AI • Built for next-gen veterinary diagnostics
+<p style='text-align:center; color:gray; font-size:14px;'>
+© 2026 Lamequi AI • Advanced Veterinary Intelligence
 </p>
 """, unsafe_allow_html=True)
