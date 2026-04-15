@@ -5,48 +5,110 @@ from torch import nn
 from PIL import Image
 import gdown
 import os
+import time
 
-# ------------------ CONFIG ------------------
+# ---------------- CONFIG ----------------
 st.set_page_config(
-    page_title="Lamequi",
+    page_title="Lamequi AI",
     page_icon="🐾",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
-# ------------------ STYLE ------------------
+# ---------------- STYLE ----------------
 st.markdown("""
 <style>
 body {
-    background-color: #0e1117;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
 }
-h1, h2, h3, p {
-    color: white;
-    text-align: center;
+
+/* Navbar */
+.navbar {
+    display:flex;
+    justify-content:space-between;
+    padding:20px;
+    color:white;
+    font-weight:bold;
+    font-size:20px;
 }
+
+/* Title */
+.title {
+    text-align:center;
+    font-size:65px;
+    font-weight:bold;
+    color:white;
+}
+.subtitle {
+    text-align:center;
+    color:#ccc;
+    font-size:22px;
+    margin-bottom:30px;
+}
+
+/* Glass box */
+.glass {
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(15px);
+    padding:30px;
+    border-radius:25px;
+    border:1px solid rgba(255,255,255,0.1);
+}
+
+/* Button */
 .stButton>button {
-    background-color: #4A90E2;
-    color: white;
-    border-radius: 10px;
-    height: 3em;
-    width: 100%;
-    font-size: 18px;
+    background: linear-gradient(90deg, #00c6ff, #0072ff);
+    color:white;
+    border-radius:12px;
+    height:3em;
+    font-size:18px;
+    border:none;
+    transition:0.3s;
 }
-.stFileUploader {
-    background-color: #262730;
-    padding: 20px;
-    border-radius: 15px;
+.stButton>button:hover {
+    transform:scale(1.07);
+}
+
+/* Result card */
+.result-card {
+    padding:25px;
+    border-radius:20px;
+    text-align:center;
+    font-size:24px;
+    font-weight:bold;
+    color:white;
+    animation:fadeIn 0.6s ease-in-out;
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from {opacity:0; transform:translateY(20px);}
+    to {opacity:1; transform:translateY(0);}
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ------------------ DOWNLOAD MODEL ------------------
+# ---------------- NAVBAR ----------------
+st.markdown("""
+<div class="navbar">
+<div>🐾 Lamequi</div>
+<div>AI • X-ray • Vet</div>
+</div>
+""", unsafe_allow_html=True)
+
+# ---------------- HEADER ----------------
+st.markdown('<div class="title">Lamequi AI</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Next-gen Veterinary X-ray Diagnosis</div>', unsafe_allow_html=True)
+
+# ---------------- MODEL DOWNLOAD ----------------
 model_path = "model.pth"
 
 if not os.path.exists(model_path):
-    url = "https://drive.google.com/uc?export=download&id=1Bz9pbfGQzf0ANGAY3Cy46FIwkxfqXIe9"
-    gdown.download(url, model_path, quiet=False)
+    with st.spinner("Downloading AI model..."):
+        url = "https://drive.google.com/uc?export=download&id=1Bz9pbfGQzf0ANGAY3Cy46FIwkxfqXIe9"
+        gdown.download(url, model_path, quiet=False)
 
-# ------------------ MODEL ------------------
+# ---------------- LOAD MODEL ----------------
 @st.cache_resource
 def load_model():
     model = models.resnet18(weights=None)
@@ -57,45 +119,68 @@ def load_model():
 
 model = load_model()
 
-# ------------------ TRANSFORM ------------------
+# ---------------- TRANSFORM ----------------
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor()
 ])
 
-# ------------------ HEADER ------------------
-st.markdown("<h1>🐾 Lamequi</h1>", unsafe_allow_html=True)
-st.markdown("<p>AI Veterinary X-ray Analyzer</p>", unsafe_allow_html=True)
+# ---------------- MAIN UI ----------------
+st.markdown('<div class="glass">', unsafe_allow_html=True)
 
-st.write("---")
+file = st.file_uploader("📤 Drag & Drop X-ray Image", type=["jpg", "png"])
 
-# ------------------ LAYOUT ------------------
-col1, col2 = st.columns(2)
+st.write("")
 
-# -------- LEFT --------
-with col1:
-    st.markdown("### 📤 Upload X-ray")
-    file = st.file_uploader("Upload image", type=["jpg", "png"])
+if file:
+    col1, col2 = st.columns([1,1])
 
-# -------- RIGHT --------
-with col2:
-    st.markdown("### 📊 Result")
-
-    if file:
+    with col1:
         img = Image.open(file).convert("RGB")
-        st.image(img, caption="Uploaded Image", use_column_width=True)
+        st.image(img, use_column_width=True)
 
-        img_t = transform(img).unsqueeze(0)
+    with col2:
+        if st.button("🚀 Analyze Now"):
+            
+            progress = st.progress(0)
+            for i in range(100):
+                time.sleep(0.01)
+                progress.progress(i + 1)
 
-        if st.button("🔍 Analyze"):
-            with st.spinner("Analyzing..."):
-                with torch.no_grad():
-                    output = model(img_t)
-                    _, pred = torch.max(output, 1)
+            img_t = transform(img).unsqueeze(0)
 
-                classes = ["🦴 Fracture", "✅ Normal"]
-                result = classes[pred.item()]
+            with torch.no_grad():
+                output = model(img_t)
+                probs = torch.nn.functional.softmax(output, dim=1)
+                confidence, pred = torch.max(probs, 1)
 
-                st.success(f"Result: {result}")
-    else:
-        st.info("Upload an image to see result")
+            classes = ["🦴 Fracture", "✅ Normal"]
+            result = classes[pred.item()]
+            conf = confidence.item() * 100
+
+            color = "#ff4b4b" if pred.item() == 0 else "#00c853"
+
+            st.markdown(f"""
+            <div class="result-card" style="background:{color}">
+                {result}<br><br>
+                Confidence: {conf:.2f}%
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.write("")
+            st.progress(conf / 100)
+
+            st.metric("Confidence Score", f"{conf:.2f}%")
+
+else:
+    st.info("Upload an image to start AI analysis")
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ---------------- FOOTER ----------------
+st.markdown("""
+<hr style="border:0.5px solid #444;">
+<p style='text-align:center; color:gray;'>
+🚀 Powered by Lamequi AI • Built for next-gen veterinary diagnostics
+</p>
+""", unsafe_allow_html=True)
